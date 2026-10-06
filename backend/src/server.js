@@ -5,6 +5,8 @@ import { env } from './config/env.js';
 import { LOCAL_USER_ID } from './config/database.js';
 import { registerUploadSocket, unregisterUploadSocket } from './services/websocketHub.js';
 import { getUploadSession } from './services/uploadSessionService.js';
+import { parseCookies } from './middleware/authMiddleware.js';
+import { resolveSession } from './services/authService.js';
 import { runDeltaSync, scheduleSync } from './services/syncService.js';
 
 function isNonFatalBackgroundError(error) {
@@ -39,8 +41,13 @@ wss.on('connection', (socket, request) => {
 	const uploadId = url.searchParams.get('uploadId');
 	const sessionToken = url.searchParams.get('token');
 	const session = uploadId ? getUploadSession(uploadId) : null;
+	const cookies = parseCookies(request.headers.cookie || '');
+	const authToken = cookies[env.authCookieName] || '';
+	const user = env.appMode === 'local'
+		? { id: LOCAL_USER_ID }
+		: resolveSession(authToken);
 
-	if (!uploadId || !sessionToken || !session || session.token !== sessionToken) {
+	if (!uploadId || !sessionToken || !session || session.token !== sessionToken || !user || session.user_id !== user.id) {
 		socket.close(1008, 'valid upload session is required');
 		return;
 	}
