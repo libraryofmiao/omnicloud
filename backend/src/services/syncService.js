@@ -27,7 +27,7 @@ async function fetchAccountSnapshot(account) {
 	);
 }
 
-function countSnapshotChanges(previousRows, remoteRows) {
+export function countSnapshotChanges(previousRows, remoteRows) {
 	const previous = new Map(previousRows.map((row) => [String(row.remote_file_id), row]));
 	const current = new Map(remoteRows.map((row) => [String(row.remote_file_id), row]));
 	let added = 0;
