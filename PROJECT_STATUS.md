@@ -44,3 +44,12 @@ The project is being started from the architecture and implementation of the pub
 
 - recovery/pre-readme-phase-development
 - Created before this development phase.
+
+
+## Phase 2 — unified workspace foundation
+
+- Added deterministic account-aware workspace file keys.
+- Added normalized virtual workspace path helpers.
+- Added cross-account duplicate detection service.
+- Exposed authenticated workspace duplicate lookup endpoint.
+- Added provider-neutral workspace identity tests.
