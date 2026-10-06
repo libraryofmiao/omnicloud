@@ -1,7 +1,7 @@
 import { env } from '../config/env.js';
 import { getCookieOptions, getFallbackLocalUser, resolveSession } from '../services/authService.js';
 
-function parseCookies(cookieHeader = '') {
+export function parseCookies(cookieHeader = '') {
 	return Object.fromEntries(
 		String(cookieHeader || '')
 			.split(';')
