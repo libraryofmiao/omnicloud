@@ -13,6 +13,7 @@ import HelpModal from './HelpModal.vue';
 import ProfileModal from './ProfileModal.vue';
 import LanguageModal from './LanguageModal.vue';
 import UpdatesModal from './UpdatesModal.vue';
+import ChangePasswordModal from './ChangePasswordModal.vue';
 import { api } from '../services/api';
 import { useFileTreeStore } from '../stores/fileTree';
 import { getFileIcon } from '../composables/useFileType.js';
@@ -34,6 +35,7 @@ const isHelpModalOpen = ref(false);
 const isProfileModalOpen = ref(false);
 const isLanguageModalOpen = ref(false);
 const isUpdatesModalOpen = ref(false);
+const isChangePasswordModalOpen = ref(false);
 const globalSearchTerm = ref('');
 const globalSearchResults = ref([]);
 const isGlobalSearchOpen = ref(false);
@@ -174,6 +176,14 @@ function closeUpdatesModal() {
 	isUpdatesModalOpen.value = false;
 }
 
+function openChangePasswordModal() {
+	isChangePasswordModalOpen.value = true;
+}
+
+function closeChangePasswordModal() {
+	isChangePasswordModalOpen.value = false;
+}
+
 function runCreateAction(action) {
 	isCreateMenuOpen.value = false;
 	isMobileNavOpen.value = false;
@@ -213,6 +223,10 @@ function handleWindowKeydown(event) {
 
 	if (isUpdatesModalOpen.value) {
 		closeUpdatesModal();
+	}
+
+	if (isChangePasswordModalOpen.value) {
+		closeChangePasswordModal();
 	}
 
 	if (isGlobalSearchOpen.value) {
@@ -290,6 +304,7 @@ const profileLinks = [
 		<ProfileModal :open="isProfileModalOpen" :profile-links="profileLinks" @close="closeProfileModal" />
 		<LanguageModal :open="isLanguageModalOpen" @close="closeLanguageModal" />
 		<UpdatesModal :open="isUpdatesModalOpen" @close="closeUpdatesModal" />
+		<ChangePasswordModal v-if="isHosted" :open="isChangePasswordModalOpen" @close="closeChangePasswordModal" />
 
 		<header class="grid h-16 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 px-2 sm:gap-4 sm:px-4 lg:grid-cols-[256px_minmax(320px,720px)_1fr] lg:gap-3 lg:px-0 lg:pr-4">
 			<div class="flex min-w-0 items-center gap-2 lg:gap-3 lg:pl-4">
@@ -350,7 +365,7 @@ const profileLinks = [
 				<button type="button" class="hidden size-10 place-items-center rounded-full text-[#5f6368] hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/10 sm:grid" :title="t('updates.buttonLabel')" :aria-label="t('updates.buttonLabel')" @click="openUpdatesModal">
 					<IconBell :size="18" :stroke="2" />
 				</button>
-				<button type="button" class="hidden size-10 place-items-center rounded-full text-[#5f6368] hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/10 sm:grid" :title="t('common.settings')">
+				<button v-if="isHosted" type="button" class="hidden size-10 place-items-center rounded-full text-[#5f6368] hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/10 sm:grid" title="Change password" aria-label="Change password" @click="openChangePasswordModal">
 					<IconSettings :size="18" :stroke="2" />
 				</button>
 				<button v-if="isHosted" type="button" class="hidden size-10 place-items-center rounded-full text-[#5f6368] hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/10 sm:grid" :title="t('auth.logout')" @click="handleLogout">
