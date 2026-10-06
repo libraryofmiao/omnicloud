@@ -60,20 +60,25 @@ export function upsertCloudAccount({
 	id,
 	email,
 	provider,
+	accountKey,
 	credentials,
 	total_space,
 	used_space,
 	status = 'active',
 }) {
 	const encrypted_credentials = typeof credentials === 'string' ? credentials : encryptJson(credentials);
+	const normalizedAccountKey = String(accountKey || email || '').trim().toLowerCase();
+	if (!normalizedAccountKey) {
+		throw new Error('A stable account key is required');
+	}
 
 	db.prepare(`
     INSERT INTO cloud_accounts (
-			id, user_id, email, provider, encrypted_credentials, total_space, used_space, status
+			id, user_id, email, provider, account_key, encrypted_credentials, total_space, used_space, status
     ) VALUES (
-			@id, @user_id, @email, @provider, @encrypted_credentials, @total_space, @used_space, @status
+			@id, @user_id, @email, @provider, @account_key, @encrypted_credentials, @total_space, @used_space, @status
     )
-		ON CONFLICT(user_id, provider, email) DO UPDATE SET
+		ON CONFLICT(user_id, provider, account_key) DO UPDATE SET
       encrypted_credentials = excluded.encrypted_credentials,
       total_space = excluded.total_space,
       used_space = excluded.used_space,
@@ -84,11 +89,12 @@ export function upsertCloudAccount({
 		user_id: userId,
 		email,
 		provider,
+		account_key: normalizedAccountKey,
 		encrypted_credentials,
 		total_space,
 		used_space,
 		status,
 	});
 
-	return db.prepare('SELECT * FROM cloud_accounts WHERE user_id = ? AND provider = ? AND email = ?').get(userId, provider, email);
+	return db.prepare('SELECT * FROM cloud_accounts WHERE user_id = ? AND provider = ? AND account_key = ?').get(userId, provider, normalizedAccountKey);
 }
