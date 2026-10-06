@@ -85,7 +85,7 @@ export function ensureSingleHostedUser() {
 		throw new Error('Hosted authentication is not configured');
 	}
 	const localUser = getOrCreateLocalUser();
-	if (localUser.email !== env.adminEmail || localUser.password_hash !== env.adminPasswordHash || !localUser.is_local) {
+	if (localUser.is_local || !localUser.password_hash) {
 		db.prepare(`
 			UPDATE users
 			SET email = ?, password_hash = ?, is_local = 0, updated_at = CURRENT_TIMESTAMP
