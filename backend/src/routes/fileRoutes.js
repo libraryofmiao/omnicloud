@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listFilesByPath, getFileById, getFileByRemoteId, listRecentFiles, listStarredFiles, searchFiles, setFileStarred, updateFileStarredByRemoteId } from '../services/fileService.js';
+import { listFilesByPath, getFileById, getFileByRemoteId, listRecentFiles, listStarredFiles, searchFiles, setFileStarred, updateFileStarredByRemoteId, getWorkspaceDuplicates } from '../services/fileService.js';
 import { getAccountById, getActiveAccounts } from '../services/accountService.js';
 import { createAdapter } from '../services/adapterRegistry.js';
 import { getProviderDefinition } from '../services/providerRegistry.js';
@@ -166,6 +166,19 @@ async function listSharedWithMeFiles(userId) {
 			return (left.file_name || '').localeCompare(right.file_name || '', 'id');
 		});
 }
+
+router.get('/workspace/duplicates', async (req, res, next) => {
+	try {
+		const data = getWorkspaceDuplicates(req.user.id, {
+			fileName: req.query.name || '',
+			size: req.query.size,
+			mimeType: req.query.mime_type || null,
+		});
+		return res.json({ data });
+	} catch (error) {
+		next(error);
+	}
+});
 
 router.get('/files', async (req, res, next) => {
 	try {
