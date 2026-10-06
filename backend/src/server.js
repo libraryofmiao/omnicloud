@@ -4,6 +4,7 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { LOCAL_USER_ID } from './config/database.js';
 import { registerUploadSocket, unregisterUploadSocket } from './services/websocketHub.js';
+import { getUploadSession } from './services/uploadSessionService.js';
 import { runDeltaSync, scheduleSync } from './services/syncService.js';
 
 function isNonFatalBackgroundError(error) {
@@ -36,9 +37,11 @@ const wss = new WebSocketServer({ server, path: '/ws/uploads' });
 wss.on('connection', (socket, request) => {
 	const url = new URL(request.url, `http://${request.headers.host}`);
 	const uploadId = url.searchParams.get('uploadId');
+	const sessionToken = url.searchParams.get('token');
+	const session = uploadId ? getUploadSession(uploadId) : null;
 
-	if (!uploadId) {
-		socket.close(1008, 'uploadId is required');
+	if (!uploadId || !sessionToken || !session || session.token !== sessionToken) {
+		socket.close(1008, 'valid upload session is required');
 		return;
 	}
 
