@@ -15,7 +15,7 @@ import { attachAuthContext } from './middleware/authMiddleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const frontendDist = path.resolve(__dirname, '../../../frontend/dist');
+const frontendDist = path.resolve(__dirname, '../../frontend/dist');
 
 export function createApp() {
 	const app = express();
