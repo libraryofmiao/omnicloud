@@ -70,6 +70,30 @@ export function searchFiles(userId, term = '', limit = 50) {
 	return buildDisplayNames(rows);
 }
 
+export function getWorkspaceDuplicates(userId, { fileName = '', size = null, mimeType = null } = {}) {
+	const conditions = ['fm.user_id = ?', 'fm.file_name = ?', 'fm.is_folder = 0'];
+	const params = [userId, fileName];
+	if (size !== null && size !== undefined) {
+		conditions.push('fm.size = ?');
+		params.push(Number(size));
+	}
+	if (mimeType) {
+		conditions.push('fm.mime_type = ?');
+		params.push(mimeType);
+	}
+	return db.prepare(`
+		SELECT fm.*, ca.provider, ca.email
+		FROM file_metadata fm
+		INNER JOIN cloud_accounts ca ON ca.id = fm.cloud_account_id
+		WHERE ${conditions.join(' AND ')}
+		ORDER BY fm.file_name COLLATE NOCASE ASC, ca.provider ASC, ca.email ASC
+	`).all(...params).map((row) => ({
+		...row,
+		workspaceKey: buildVirtualFileKey({ cloudAccountId: row.cloud_account_id, remoteFileId: row.remote_file_id }),
+		workspacePath: buildWorkspacePath({ virtualPath: row.virtual_path, fileName: row.file_name }),
+	}));
+}
+
 export function createFileMetadata(record) {
 	const payload = {
 		id: randomUUID(),
