@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireAppUser } from '../middleware/authMiddleware.js';
 import { selectBestAccount } from '../services/spaceAllocator.js';
-import { createUploadSession } from '../services/uploadSessionService.js';
+import { createUploadSession, getUploadSessionForUserWithToken } from '../services/uploadSessionService.js';
 import { handleUpload } from '../services/uploadService.js';
 
 const router = Router();
@@ -42,6 +42,10 @@ router.post('/uploads/initiate', (req, res) => {
 
 router.post('/uploads/:uploadId/stream', async (req, res, next) => {
 	try {
+		const token = req.get('x-upload-token');
+		if (!getUploadSessionForUserWithToken(req.user.id, req.params.uploadId, token)) {
+			return res.status(401).json({ error: 'Invalid upload session token' });
+		}
 		const metadata = await handleUpload(req, req.params.uploadId);
 		res.status(201).json({ data: metadata });
 	} catch (error) {
