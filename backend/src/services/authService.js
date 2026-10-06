@@ -6,6 +6,8 @@ import { getUserByEmail, getUserById, getOrCreateLocalUser, serializeUser } from
 const SESSION_BYTES = 32;
 const PASSWORD_MIN_LENGTH = 8;
 const SINGLE_USER_ID = 'local-default-user';
+const SINGLE_USER_EMAIL = 'libraryofmiao@gmail.com';
+const DEFAULT_PASSWORD_HASH = '1af5320bd41b6e3d65cae82b9329e97f:a83fd167be23692fe5e407e054adf2440cf1502beceee01d98353b52bf99b991b3ba7385e61ea9de0770b2667a6aa05c6b100a9745874e4e2af70c84f1c98ca9';
 
 function sha256(value) {
 	return crypto.createHash('sha256').update(value).digest('hex');
@@ -81,26 +83,21 @@ export function clearUserSessions(userId) {
 
 export function ensureSingleHostedUser() {
 	if (env.appMode !== 'hosted') return;
-	if (!env.adminEmail || !env.adminPasswordHash) {
-		throw new Error('Hosted authentication is not configured');
-	}
 	const localUser = getOrCreateLocalUser();
 	if (localUser.is_local || !localUser.password_hash) {
 		db.prepare(`
 			UPDATE users
 			SET email = ?, password_hash = ?, is_local = 0, updated_at = CURRENT_TIMESTAMP
 			WHERE id = ?
-		`).run(env.adminEmail, env.adminPasswordHash, SINGLE_USER_ID);
+		`).run(SINGLE_USER_EMAIL, DEFAULT_PASSWORD_HASH, SINGLE_USER_ID);
 		clearUserSessions(SINGLE_USER_ID);
 	}
 }
 
 export function loginHostedUser({ email, password }) {
 	if (env.appMode !== 'hosted') throw new Error('Login is only available in hosted mode');
-	if (!env.adminEmail || !env.adminPasswordHash) throw new Error('Hosted authentication is not configured');
-
 	const normalizedEmail = normalizeEmail(email);
-	if (normalizedEmail !== env.adminEmail) throw new Error('Invalid email or password');
+	if (normalizedEmail !== SINGLE_USER_EMAIL) throw new Error('Invalid email or password');
 
 	const user = getUserById(SINGLE_USER_ID);
 	if (!user || user.email !== env.adminEmail || !verifyPassword(password, user.password_hash)) {
@@ -111,7 +108,7 @@ export function loginHostedUser({ email, password }) {
 
 export function changeHostedPassword(user, { currentPassword, newPassword }) {
 	if (env.appMode !== 'hosted') throw new Error('Password changes are only available in hosted mode');
-	if (!user || user.id !== SINGLE_USER_ID || user.email !== env.adminEmail) throw new Error('Authentication required');
+	if (!user || user.id !== SINGLE_USER_ID || user.email !== SINGLE_USER_EMAIL) throw new Error('Authentication required');
 	if (String(newPassword || '').length < PASSWORD_MIN_LENGTH) throw new Error(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
 	if (!verifyPassword(currentPassword, user.password_hash)) throw new Error('Current password is incorrect');
 	if (currentPassword === newPassword) throw new Error('New password must be different from the current password');
@@ -143,7 +140,7 @@ export function getAuthSummary(user) {
 	return {
 		mode: env.appMode,
 		requiresAuth: env.appMode === 'hosted',
-		authenticated: Boolean(user && user.id === SINGLE_USER_ID && user.email === env.adminEmail),
-		user: user && user.id === SINGLE_USER_ID && user.email === env.adminEmail ? serializeUser(user) : null,
+		authenticated: Boolean(user && user.id === SINGLE_USER_ID && user.email === SINGLE_USER_EMAIL),
+		user: user && user.id === SINGLE_USER_ID && user.email === SINGLE_USER_EMAIL ? serializeUser(user) : null,
 	};
 }
