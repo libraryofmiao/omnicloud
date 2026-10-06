@@ -89,3 +89,14 @@ The project is being started from the architecture and implementation of the pub
 - Health now returns the authenticated user's sync report while retaining aggregate running state for unauthenticated health checks.
 - Added a sync-service module smoke test.
 - Recovery point: `recovery/readme-next-sync-audit`.
+
+
+## README-aligned remaining-capability implementation pass
+
+- Created recovery point: `recovery/pre-all-remaining-readme`.
+- Hardened allocation configuration so manual account ordering can reference only unique active accounts.
+- Hardened all documented allocation strategies so an upload is rejected when no active account has sufficient free space instead of selecting an undersized target.
+- Hardened hosted authentication cookie parsing against malformed cookie values and reused the parser during logout.
+- Hardened documented user settings validation for supported keys and themes.
+- Corrected sync reporting so `changesDetected` represents actual added/updated/deleted metadata records instead of the number of records scanned.
+- Added focused authentication and allocation test coverage.
