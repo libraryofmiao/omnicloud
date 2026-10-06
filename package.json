@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm --prefix backend test",
     "dev": "npm-run-all --parallel dev:api dev:web",
     "build": "npm run build:web",
     "build:web": "npm --prefix frontend run build",
