@@ -62,3 +62,11 @@ The project is being started from the architecture and implementation of the pub
 - The upload payload is now staged exactly once before provider/fallback attempts, preserving the replayable fallback design.
 - Recovery point: `recovery/readme-next-provider-audit`.
 - CI was triggered by the fix and is being verified.
+
+
+## README-aligned workspace audit — path normalization
+
+- Re-audited the unified workspace file-metadata path after the upload fix.
+- Corrected remaining internal references to the exported `normalizeVirtualPath` helper in `fileService.js`.
+- This restores path normalization for account sync/upsert flows without changing the README-defined workspace behavior.
+- Recovery point: `recovery/readme-next-workspace`.
