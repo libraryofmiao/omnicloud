@@ -411,6 +411,17 @@ const profileLinks = [
 						</div>
 					</div>
 
+
+					<div v-if="isHosted" class="mt-4 grid grid-cols-2 gap-2">
+						<button type="button" class="flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#dfe6f1] bg-white text-sm font-medium text-[#3c4043] transition hover:bg-[#f8fafd] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700/70" @click="openChangePasswordModal">
+							<IconSettings :size="17" :stroke="2" />
+							<span>Change password</span>
+						</button>
+						<button type="button" class="flex h-11 items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 text-sm font-medium text-red-700 transition hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50" @click="handleLogout">
+							<IconLogout :size="17" :stroke="2" />
+							<span>Logout</span>
+						</button>
+					</div>
 					<nav class="flex flex-col gap-1">
 						<RouterLink v-for="item in navItems" :key="item.label" :to="item.to" class="group relative flex h-12 items-center gap-3.5 overflow-hidden rounded-2xl px-4 text-[#202124] transition-all duration-200 dark:text-slate-100" :class="props.currentSection === item.id ? 'bg-[linear-gradient(90deg,rgba(211,227,253,0.98)_0%,rgba(238,245,255,0.94)_72%,rgba(238,245,255,0.12)_88%,rgba(238,245,255,0)_100%)] font-semibold text-[#174ea6] shadow-[inset_4px_0_0_#1a73e8] dark:bg-[linear-gradient(90deg,rgba(59,130,246,0.24)_0%,rgba(51,65,85,0.2)_72%,rgba(30,41,59,0.08)_88%,rgba(15,23,42,0)_100%)] dark:text-blue-200 dark:shadow-[inset_4px_0_0_#60a5fa]' : 'hover:bg-black/[0.03] hover:pl-5 dark:hover:bg-white/6'" @click="closeMobileNav">
 							<component :is="props.currentSection === item.id ? item.activeIcon : item.icon" :size="20" :stroke="props.currentSection === item.id ? 0 : 2" class="shrink-0 transition-transform duration-200 group-hover:scale-110" :class="props.currentSection === item.id ? 'text-[#1a73e8] drop-shadow-sm dark:text-blue-300' : 'text-[#5f6368] dark:text-slate-400'" />
