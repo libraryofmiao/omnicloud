@@ -100,6 +100,22 @@ if (currentSchemaVersion < 1) {
 	db.prepare('INSERT OR IGNORE INTO schema_migrations (version) VALUES (1)').run();
 }
 
+if (currentSchemaVersion < 2) {
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS oauth_states (
+			state TEXT PRIMARY KEY,
+			provider TEXT NOT NULL,
+			user_id TEXT NOT NULL,
+			created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			expires_at TEXT NOT NULL,
+			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+		);
+		CREATE INDEX IF NOT EXISTS idx_oauth_states_expires_at ON oauth_states(expires_at);
+	`);
+	db.pragma('user_version = 2');
+	db.prepare('INSERT OR IGNORE INTO schema_migrations (version) VALUES (2)').run();
+}
+
 db.prepare(`
   INSERT OR IGNORE INTO users (id, email, password_hash, is_local)
   VALUES (?, ?, '', 1)
