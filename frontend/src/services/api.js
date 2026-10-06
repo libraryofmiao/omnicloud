@@ -1,6 +1,10 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787/api';
-const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL
-	|| API_BASE_URL.replace(/^http/, 'ws').replace(/\/api$/, '/ws/uploads');
+const configuredWsBaseUrl = import.meta.env.VITE_WS_BASE_URL;
+const WS_BASE_URL = configuredWsBaseUrl
+	? (configuredWsBaseUrl.startsWith('/')
+		? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${configuredWsBaseUrl}`
+		: configuredWsBaseUrl)
+	: API_BASE_URL.replace(/^http/, 'ws').replace(/\/api$/, '/ws/uploads');
 
 async function request(path, options = {}) {
 	const response = await fetch(`${API_BASE_URL}${path}`, {
