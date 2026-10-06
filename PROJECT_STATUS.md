@@ -117,3 +117,12 @@ The project is being started from the architecture and implementation of the pub
 - Allocation tests now exercise every documented strategy when no account can fit the upload.
 - Final audit hardened allocator byte validation and workspace search-limit validation.
 - GitHub currently reports no commit status/workflow result for the latest commits, so CI has not been represented as passing without evidence.
+
+
+## 2026-10-06 CI verification
+- Fixed a workspace-path regular-expression syntax error that blocked `fileService.js` from loading.
+- CI now uses Node 22 to match current frontend dependency engine requirements.
+- Backend test command now uses `node --test test/*.test.js` for reliable test discovery.
+- Latest main CI run passed: backend smoke tests and frontend production build both successful.
+- Remaining verification is limited to live provider/OAuth end-to-end testing with real provider accounts and production deployment/operational checks; these cannot be fully proven by repository CI alone.
+- `npm ci` currently reports 11 dependency vulnerabilities (1 low, 1 moderate, 8 high, 1 critical); this remains a dependency-maintenance item and was not auto-fixed to avoid unrelated dependency regressions.
