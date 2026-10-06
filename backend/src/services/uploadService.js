@@ -1,6 +1,6 @@
 import Busboy from 'busboy';
 import { createReadStream, createWriteStream } from 'fs';
-import { mkdtemp, rm } from 'fs/promises';
+import { mkdtemp, rm, stat } from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import { createAdapter } from './adapterRegistry.js';
@@ -54,6 +54,13 @@ async function pipeUpload({ req, session }) {
 			} catch (error) {
 				try { file.destroy(); } catch {}
 				complete(reject, error);
+				return;
+			}
+
+			const stagedSize = (await stat(tempPath)).size;
+			if (stagedSize !== Number(session.size)) {
+				complete(reject, new Error(`Upload size mismatch: expected ${session.size} bytes but received ${stagedSize} bytes`));
+				await rm(tempDir, { recursive: true, force: true }).catch(() => {});
 				return;
 			}
 
