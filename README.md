@@ -322,6 +322,7 @@ docker compose down -v
 | `npm run build:web` | Build only the frontend |
 | `npm run dev:web` | Run the Vite dev server |
 | `npm run dev:api` | Run the backend with `node --watch` |
+| `npm test` | Run backend smoke/unit tests |
 | `npm start` | Start the backend without watch mode |
 
 ### Frontend scripts
@@ -337,6 +338,7 @@ docker compose down -v
 | Script | Description |
 | --- | --- |
 | `npm --prefix backend run dev` | Run the API with file watch |
+| `npm --prefix backend test` | Run backend smoke/unit tests |
 | `npm --prefix backend start` | Run the API normally |
 
 ## 🔌 API overview
