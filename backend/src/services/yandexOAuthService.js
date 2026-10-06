@@ -43,6 +43,7 @@ async function fetchYandexProfile(accessToken) {
 	return {
 		email: disk.user?.email || `${login}@yandex`,
 		displayName: disk.user?.display_name || login,
+		accountId: disk.user?.uid || disk.user?.id || null,
 		totalSpace: Number(disk.total_space || 0),
 		usedSpace: Number(disk.used_space || 0),
 	};
