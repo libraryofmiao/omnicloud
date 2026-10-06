@@ -108,7 +108,7 @@ const { renderCount, visibleItems: renderedFiles, handleScroll: handleListScroll
 });
 
 watch(searchTerm, (term) => {
-	fileTreeStore.applySearch(term);
+	fileTreeStore.search(term);
 });
 
 watch(() => fileTreeStore.files, consumePendingHighlight, { flush: 'post' });
