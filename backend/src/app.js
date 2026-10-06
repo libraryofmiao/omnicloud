@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import authRoutes from './routes/authRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 import accountRoutes from './routes/accountRoutes.js';
@@ -10,6 +12,10 @@ import allocationRoutes from './routes/allocationRoutes.js';
 import providerRoutes from './routes/providerRoutes.js';
 import { env } from './config/env.js';
 import { attachAuthContext } from './middleware/authMiddleware.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendDist = path.resolve(__dirname, '../../../frontend/dist');
 
 export function createApp() {
 	const app = express();
@@ -46,6 +52,14 @@ export function createApp() {
 	app.use('/api', settingsRoutes);
 	app.use('/api', allocationRoutes);
 	app.use('/api', providerRoutes);
+
+	// Render runs the frontend and API from the same web service.
+	// Static assets are served directly and Vue Router paths fall back to index.html.
+	app.use(express.static(frontendDist));
+	app.get(/^(?!\/api(?:\/|$)).*/, (req, res, next) => {
+		if (req.method !== 'GET') return next();
+		return res.sendFile(path.join(frontendDist, 'index.html'));
+	});
 
 	app.use((error, _req, res, _next) => {
 		console.error(error);
