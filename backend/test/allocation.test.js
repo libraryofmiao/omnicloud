@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { db } from '../src/config/database.js';
 import { createUser } from '../src/services/userService.js';
 import { upsertCloudAccount } from '../src/services/accountService.js';
-import { setAllocationConfig, getAllocationConfig } from '../src/services/allocationService.js';
+import { setAllocationConfig, getAllocationConfig, ALLOCATION_STRATEGIES } from '../src/services/allocationService.js';
 import { selectBestAccount } from '../src/services/spaceAllocator.js';
 
 test('allocation rejects unknown or duplicate account order entries', async () => {
@@ -29,6 +29,9 @@ test('allocator never selects an account that cannot fit the requested upload', 
 		accountKey: `${userId}:small`, credentials: { secret: 'test' },
 		total_space: 100, used_space: 100, status: 'active',
 	});
-	assert.throws(() => selectBestAccount(userId, 1), /enough free space/i);
+	for (const strategy of ALLOCATION_STRATEGIES) {
+		setAllocationConfig(userId, { strategy });
+		assert.throws(() => selectBestAccount(userId, 1), /enough free space/i, strategy);
+	}
 	db.prepare('DELETE FROM users WHERE id = ?').run(userId);
 });
