@@ -17,13 +17,13 @@ function withFreeSpace(account) {
 	};
 }
 
-function buildResult(selected, allAccounts) {
+function buildResult(selected, allAccounts, requiredBytes) {
 	if (!selected) {
 		throw new Error('No active cloud account available');
 	}
 
 	const fallbackChain = allAccounts
-		.filter((account) => account.id !== selected.id)
+		.filter((account) => account.id !== selected.id && account.freeSpace >= requiredBytes)
 		.sort((a, b) => b.freeSpace - a.freeSpace);
 
 	return { selected, fallbackChain };
@@ -43,7 +43,7 @@ function selectRoundRobin(userId, accounts, requiredBytes) {
 	}
 
 	if (chosenIndex === -1) {
-		chosenIndex = start;
+		throw new Error('No active cloud account has enough free space for this upload');
 	}
 
 	setRoundRobinCursor(userId, (chosenIndex + 1) % count);
@@ -51,8 +51,7 @@ function selectRoundRobin(userId, accounts, requiredBytes) {
 }
 
 function selectWeightedRoundRobin(userId, accounts, requiredBytes) {
-	const eligible = accounts.filter((account) => account.freeSpace >= requiredBytes);
-	const pool = eligible.length ? eligible : accounts;
+	const pool = accounts.filter((account) => account.freeSpace >= requiredBytes);
 
 	const weights = pool.map((account) => Math.max(1, Number(account.total_space) || 1));
 	const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
@@ -82,8 +81,8 @@ function selectWeightedRoundRobin(userId, accounts, requiredBytes) {
 
 function selectLeastUsed(accounts, requiredBytes) {
 	const eligible = accounts.filter((account) => account.freeSpace >= requiredBytes);
-	const pool = eligible.length ? eligible : accounts;
-	return [...pool].sort((a, b) => a.usedRatio - b.usedRatio)[0];
+	if (!eligible.length) throw new Error('No active cloud account has enough free space for this upload');
+	return [...eligible].sort((a, b) => a.usedRatio - b.usedRatio)[0];
 }
 
 function selectMostFree(accounts, requiredBytes) {
@@ -95,7 +94,9 @@ function selectMostFree(accounts, requiredBytes) {
 }
 
 function selectManual(accounts, requiredBytes) {
-	return accounts.find((account) => account.freeSpace >= requiredBytes) || accounts[0];
+	const selected = accounts.find((account) => account.freeSpace >= requiredBytes);
+	if (!selected) throw new Error('No active cloud account has enough free space for this upload');
+	return selected;
 }
 
 export function selectBestAccount(userId, requiredBytes = 0) {
@@ -127,5 +128,5 @@ export function selectBestAccount(userId, requiredBytes = 0) {
 			break;
 	}
 
-	return buildResult(selected, accounts);
+	return buildResult(selected, accounts, required);
 }
