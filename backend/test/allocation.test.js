@@ -16,7 +16,7 @@ test('allocation rejects unknown or duplicate account order entries', async () =
 		total_space: 1000, used_space: 0, status: 'active',
 	});
 	assert.throws(() => setAllocationConfig(userId, { order: [account.id, account.id] }), /duplicate/i);
-	assert.throws(() => setAllocationConfig(userId, { order: ['missing-account'] }), /unavailable/i);
+	assert.throws(() => setAllocationConfig(userId, { order: ['missing-account'] }), /active connected/i);
 	db.prepare('DELETE FROM users WHERE id = ?').run(userId);
 });
 
