@@ -100,3 +100,18 @@ The project is being started from the architecture and implementation of the pub
 - Hardened documented user settings validation for supported keys and themes.
 - Corrected sync reporting so `changesDetected` represents actual added/updated/deleted metadata records instead of the number of records scanned.
 - Added focused authentication and allocation test coverage.
+
+
+## README-aligned remaining capability implementation — completed pass
+
+- Created recovery point: `recovery/pre-all-remaining-readme-v2` before the final implementation pass.
+- Hardened every allocation strategy so no upload is assigned to an account without enough free space; fallback chains now contain only eligible accounts.
+- Allocation order now rejects duplicate, empty, unknown, and non-active account IDs.
+- Stable provider account keys are exposed in account listings and Yandex Disk now uses its provider UID when available.
+- Upload WebSocket sessions are bound to the authenticated user as well as the upload-session token.
+- Upload initiation validates a non-negative safe integer size; staged payload size is verified before provider upload; zero-byte progress is handled safely.
+- Hosted authenticated downloads now include session credentials in the frontend fetch path.
+- My Drive search now uses the backend cross-provider search API, with stale search responses ignored.
+- Added sync delta coverage and a common provider-adapter contract test covering all seven supported adapters.
+- Final implementation remains confined to `libraryofmiao/omnicloud`.
+- GitHub currently reports no commit status/workflow result for the latest commits, so CI has not been represented as passing without evidence.
