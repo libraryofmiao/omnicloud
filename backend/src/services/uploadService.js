@@ -78,7 +78,7 @@ async function pipeUpload({ req, session }) {
 					virtualPath: session.virtual_path,
 					remoteParentId: session.remote_parent_id,
 					onProgress: (bytes) => {
-						const percent = Math.min(100, Math.round((bytes / session.size) * 100));
+						const percent = session.size > 0 ? Math.min(100, Math.round((bytes / session.size) * 100)) : 100;
 						emitUploadEvent(session.id, {
 							type: 'upload:progress',
 							uploadId: session.id,
