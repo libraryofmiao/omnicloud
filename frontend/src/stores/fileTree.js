@@ -31,6 +31,7 @@ export const useFileTreeStore = defineStore('fileTree', {
 		searchTerm: '',
 		isLoading: false,
 		error: null,
+		searchRequestId: 0,
 	}),
 	actions: {
 		async loadFiles(path = this.currentPath) {
@@ -46,6 +47,27 @@ export const useFileTreeStore = defineStore('fileTree', {
 				this.error = error.message;
 			} finally {
 				this.isLoading = false;
+			}
+		},
+		async search(term) {
+			this.searchTerm = term;
+			const lowered = String(term || '').trim();
+			const requestId = ++this.searchRequestId;
+			if (!lowered) {
+				return this.loadFiles(this.currentPath);
+			}
+			this.isLoading = true;
+			this.error = null;
+			try {
+				const { data } = await api.searchFiles(lowered, 100);
+				if (requestId !== this.searchRequestId) return;
+				this.files = data;
+				this.filteredFiles = data;
+				this.breadcrumbs = [{ label: 'Search', path: this.currentPath }];
+			} catch (error) {
+				if (requestId === this.searchRequestId) this.error = error.message;
+			} finally {
+				if (requestId === this.searchRequestId) this.isLoading = false;
 			}
 		},
 		applySearch(term) {
