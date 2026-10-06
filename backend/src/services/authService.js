@@ -99,12 +99,22 @@ export function registerHostedUser({ email, password }) {
 		throw new Error('Email is already registered');
 	}
 
-	const user = createUser({
+	// On the first hosted registration, adopt the existing local account so
+	// existing OmniCloud cloud accounts and file metadata remain intact.
+	const localUser = getUserById('local-default-user');
+	if (localUser?.is_local) {
+		db.prepare(`
+			UPDATE users
+			SET email = ?, password_hash = ?, is_local = 0, updated_at = CURRENT_TIMESTAMP
+			WHERE id = ?
+		`).run(normalizedEmail, hashPassword(password), localUser.id);
+		return getUserById(localUser.id);
+	}
+
+	return createUser({
 		email: normalizedEmail,
 		passwordHash: hashPassword(password),
 	});
-
-	return user;
 }
 
 export function loginHostedUser({ email, password }) {
@@ -118,6 +128,33 @@ export function loginHostedUser({ email, password }) {
 	}
 
 	return user;
+}
+
+export function changeHostedPassword(user, { currentPassword, newPassword }) {
+	if (env.appMode !== 'hosted') {
+		throw new Error('Password changes are only available in hosted mode');
+	}
+	if (!user) {
+		throw new Error('Authentication required');
+	}
+	if (String(newPassword || '').length < PASSWORD_MIN_LENGTH) {
+		throw new Error(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
+	}
+	if (!verifyPassword(currentPassword, user.password_hash)) {
+		throw new Error('Current password is incorrect');
+	}
+	if (currentPassword === newPassword) {
+		throw new Error('New password must be different from the current password');
+	}
+
+	db.prepare(`
+		UPDATE users
+		SET password_hash = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`).run(hashPassword(newPassword), user.id);
+
+	clearUserSessions(user.id);
+	return getUserById(user.id);
 }
 
 export function getFallbackLocalUser() {
