@@ -107,8 +107,6 @@ db.prepare(`
 
 db.exec(`
   CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id);
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_cloud_accounts_user_provider_email
-    ON cloud_accounts(user_id, provider, email);
   CREATE INDEX IF NOT EXISTS idx_cloud_accounts_user_id
     ON cloud_accounts(user_id);
   CREATE INDEX IF NOT EXISTS idx_file_virtual_path ON file_metadata(user_id, virtual_path);
