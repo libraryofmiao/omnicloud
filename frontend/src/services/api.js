@@ -186,6 +186,9 @@ export const api = {
 		const response = await fetch(`${API_BASE_URL}/uploads/${uploadId}/stream`, {
 			method: 'POST',
 			credentials: 'include',
+			headers: {
+				'X-Upload-Token': options.token,
+			},
 			body: formData,
 			signal: options.signal,
 		});
@@ -197,8 +200,10 @@ export const api = {
 
 		return response.json();
 	},
-	createUploadSocket(uploadId) {
-		return new WebSocket(`${WS_BASE_URL}?uploadId=${encodeURIComponent(uploadId)}`);
+	createUploadSocket(uploadId, token) {
+		return new WebSocket(
+			`${WS_BASE_URL}?uploadId=${encodeURIComponent(uploadId)}&token=${encodeURIComponent(token)}`,
+		);
 	},
 	downloadUrl(fileId) {
 		return `${API_BASE_URL}/files/${fileId}/download`;
