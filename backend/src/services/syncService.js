@@ -152,9 +152,6 @@ export async function syncAccount(userId, account) {
 	try {
 		const { remoteFiles, storage } = await fetchAccountSnapshot(account);
 
-		replaceFilesForAccount(userId, account.id, remoteFiles);
-		updateAccountStorage(userId, account.id, storage.totalSpace, storage.usedSpace);
-
 		const previousRows = listAllFiles(userId).filter((row) => row.cloud_account_id === account.id);
 		const delta = countSnapshotChanges(previousRows, remoteFiles);
 		replaceFilesForAccount(userId, account.id, remoteFiles);
