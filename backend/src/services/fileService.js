@@ -13,8 +13,9 @@ function buildDisplayNames(rows) {
 		...row,
 		createdTime: row.remote_created_time || null,
 		modifiedTime: row.remote_modified_time || null,
+		starred: Boolean(row.is_starred),
 		capabilities: {
-			starred: row.provider === 'google_drive',
+			starred: true,
 			rename: true,
 			delete: true,
 		},
@@ -177,13 +178,20 @@ export function setFileStarred(userId, fileId, isStarred) {
 }
 
 export function replaceFilesForAccount(userId, cloudAccountId, records) {
+	const previousStars = new Map(
+		db.prepare('SELECT remote_file_id, is_starred FROM file_metadata WHERE user_id = ? AND cloud_account_id = ? AND is_starred = 1')
+			.all(userId, cloudAccountId)
+			.map((row) => [row.remote_file_id, 1]),
+	);
 	const normalizedRecords = records.map((record) => ({
 		id: record.id || randomUUID(),
 		user_id: userId,
 		virtual_path: normalizePath(record.virtual_path),
 		file_name: record.file_name,
 		is_folder: record.is_folder ? 1 : 0,
-		is_starred: record.is_starred ? 1 : 0,
+		is_starred: record.is_starred === undefined
+			? (previousStars.get(record.remote_file_id) || 0)
+			: (record.is_starred ? 1 : 0),
 		size: Number(record.size || 0),
 		mime_type: resolveMimeType(record),
 		cloud_account_id: cloudAccountId,
