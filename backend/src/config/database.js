@@ -38,6 +38,7 @@ db.exec(`
     user_id TEXT NOT NULL,
     email TEXT NOT NULL,
     provider TEXT NOT NULL,
+    account_key TEXT NOT NULL DEFAULT '',
     encrypted_credentials TEXT NOT NULL,
     total_space INTEGER NOT NULL,
     used_space INTEGER NOT NULL,
@@ -77,6 +78,27 @@ db.exec(`
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 `);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS schema_migrations (
+    version INTEGER PRIMARY KEY,
+    applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+const currentSchemaVersion = Number(db.pragma('user_version', { simple: true })) || 0;
+
+if (currentSchemaVersion < 1) {
+	const columns = db.prepare('PRAGMA table_info(cloud_accounts)').all().map((column) => column.name);
+	if (!columns.includes('account_key')) {
+		db.exec("ALTER TABLE cloud_accounts ADD COLUMN account_key TEXT NOT NULL DEFAULT ''");
+	}
+	db.exec("UPDATE cloud_accounts SET account_key = lower(provider || ':' || email) WHERE account_key = ''");
+	db.exec("DROP INDEX IF EXISTS idx_cloud_accounts_user_provider_email");
+	db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_cloud_accounts_user_provider_account_key ON cloud_accounts(user_id, provider, account_key)");
+	db.pragma('user_version = 1');
+	db.prepare('INSERT OR IGNORE INTO schema_migrations (version) VALUES (1)').run();
+}
 
 db.prepare(`
   INSERT OR IGNORE INTO users (id, email, password_hash, is_local)
