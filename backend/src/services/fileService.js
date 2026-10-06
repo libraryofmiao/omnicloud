@@ -214,7 +214,7 @@ export function replaceFilesForAccount(userId, cloudAccountId, records) {
 	const normalizedRecords = records.map((record) => ({
 		id: record.id || randomUUID(),
 		user_id: userId,
-		virtual_path: normalizePath(record.virtual_path),
+		virtual_path: normalizeVirtualPath(record.virtual_path),
 		file_name: record.file_name,
 		is_folder: record.is_folder ? 1 : 0,
 		is_starred: record.is_starred === undefined
@@ -281,7 +281,7 @@ export function upsertFileMetadata(record) {
       updated_at = CURRENT_TIMESTAMP
   `).run({
 		...record,
-		virtual_path: normalizePath(record.virtual_path),
+		virtual_path: normalizeVirtualPath(record.virtual_path),
 		user_id: record.user_id,
 		is_folder: record.is_folder ? 1 : 0,
 		is_starred: record.is_starred ? 1 : 0,
