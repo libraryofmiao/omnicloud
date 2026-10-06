@@ -3,7 +3,6 @@ import { createReadStream, createWriteStream } from 'fs';
 import { mkdtemp, rm } from 'fs/promises';
 import os from 'os';
 import path from 'path';
-import { once } from 'events';
 import { createAdapter } from './adapterRegistry.js';
 import { getAccountById, markAccountStatus, updateAccountUsage } from './accountService.js';
 import { createFileMetadata, getFileByRemoteId } from './fileService.js';
@@ -34,11 +33,25 @@ async function pipeUpload({ req, session }) {
 				tempPath = path.join(tempDir, 'payload');
 				const tempWriteStream = createWriteStream(tempPath, { flags: 'wx' });
 				file.pipe(tempWriteStream);
-				await Promise.race([
-					once(tempWriteStream, 'finish'),
-					once(tempWriteStream, 'error').then(([error]) => Promise.reject(error)),
-					once(file, 'error').then(([error]) => Promise.reject(error)),
-				]);
+				await new Promise((resolve, reject) => {
+					const cleanup = () => {
+						tempWriteStream.off('finish', onFinish);
+						tempWriteStream.off('error', onError);
+						file.off('error', onError);
+					};
+					const onFinish = () => {
+						cleanup();
+						resolve();
+					};
+					const onError = (error) => {
+						cleanup();
+						reject(error);
+					};
+				tempWriteStream.once('finish', onFinish);
+					tempWriteStream.once('error', onError);
+					file.once('error', onError);
+					file.pipe(tempWriteStream);
+				});
 			} catch (error) {
 				try { file.destroy(); } catch {}
 				complete(reject, error);
