@@ -8,6 +8,7 @@ import {
 	loginHostedUser,
 	registerHostedUser,
 } from '../services/authService.js';
+import { parseCookies } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
@@ -49,15 +50,11 @@ router.post('/auth/login', (req, res, next) => {
 });
 
 router.post('/auth/logout', (req, res) => {
-	const cookieHeader = req.headers.cookie || '';
-	const token = cookieHeader
-		.split(';')
-		.map((item) => item.trim())
-		.find((item) => item.startsWith(`${env.authCookieName}=`))
-		?.slice(env.authCookieName.length + 1);
+	const cookies = parseCookies(req.headers.cookie || '');
+	const token = cookies[env.authCookieName] || '';
 
 	if (token) {
-		destroySession(decodeURIComponent(token));
+		destroySession(token);
 	}
 
 	clearAuthCookie(res);
