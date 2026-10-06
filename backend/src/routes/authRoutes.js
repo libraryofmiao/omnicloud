@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { env } from '../config/env.js';
 import {
+	changeHostedPassword,
 	clearUserSessions,
 	createSession,
 	destroySession,
@@ -8,7 +9,7 @@ import {
 	loginHostedUser,
 	registerHostedUser,
 } from '../services/authService.js';
-import { parseCookies } from '../middleware/authMiddleware.js';
+import { parseCookies, requireAppUser } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
@@ -41,6 +42,17 @@ router.post('/auth/register', (req, res, next) => {
 router.post('/auth/login', (req, res, next) => {
 	try {
 		const user = loginHostedUser(req.body || {});
+		const session = createSession(user.id);
+		setAuthCookie(res, session.token);
+		res.json({ data: getAuthSummary(user) });
+	} catch (error) {
+		next(error);
+	}
+});
+
+router.post('/auth/change-password', requireAppUser, (req, res, next) => {
+	try {
+		const user = changeHostedPassword(req.user, req.body || {});
 		const session = createSession(user.id);
 		setAuthCookie(res, session.token);
 		res.json({ data: getAuthSummary(user) });
