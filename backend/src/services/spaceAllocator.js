@@ -86,8 +86,12 @@ function selectLeastUsed(accounts, requiredBytes) {
 	return [...pool].sort((a, b) => a.usedRatio - b.usedRatio)[0];
 }
 
-function selectMostFree(accounts) {
-	return [...accounts].sort((a, b) => b.freeSpace - a.freeSpace)[0];
+function selectMostFree(accounts, requiredBytes) {
+	const eligible = accounts.filter((account) => account.freeSpace >= requiredBytes);
+	if (!eligible.length) {
+		throw new Error('No active cloud account has enough free space for this upload');
+	}
+	return [...eligible].sort((a, b) => b.freeSpace - a.freeSpace)[0];
 }
 
 function selectManual(accounts, requiredBytes) {
@@ -119,7 +123,7 @@ export function selectBestAccount(userId, requiredBytes = 0) {
 			break;
 		case 'most_free':
 		default:
-			selected = selectMostFree(accounts);
+			selected = selectMostFree(accounts, required);
 			break;
 	}
 
