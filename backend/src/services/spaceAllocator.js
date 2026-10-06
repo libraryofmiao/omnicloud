@@ -52,6 +52,7 @@ function selectRoundRobin(userId, accounts, requiredBytes) {
 
 function selectWeightedRoundRobin(userId, accounts, requiredBytes) {
 	const pool = accounts.filter((account) => account.freeSpace >= requiredBytes);
+	if (!pool.length) throw new Error('No active cloud account has enough free space for this upload');
 
 	const weights = pool.map((account) => Math.max(1, Number(account.total_space) || 1));
 	const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
