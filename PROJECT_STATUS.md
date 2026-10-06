@@ -53,3 +53,12 @@ The project is being started from the architecture and implementation of the pub
 - Added cross-account duplicate detection service.
 - Exposed authenticated workspace duplicate lookup endpoint.
 - Added provider-neutral workspace identity tests.
+
+
+## README-aligned functional audit — upload path
+
+- Audited the README-documented upload workflow after the workspace foundation.
+- Found and fixed a duplicate Busboy file-stream pipe in the upload staging path.
+- The upload payload is now staged exactly once before provider/fallback attempts, preserving the replayable fallback design.
+- Recovery point: `recovery/readme-next-provider-audit`.
+- CI was triggered by the fix and is being verified.
