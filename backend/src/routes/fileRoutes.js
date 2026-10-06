@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { listFilesByPath, getFileById, getFileByRemoteId, listRecentFiles, listStarredFiles, searchFiles, setFileStarred, updateFileStarredByRemoteId } from '../services/fileService.js';
 import { getAccountById, getActiveAccounts } from '../services/accountService.js';
 import { createAdapter } from '../services/adapterRegistry.js';
+import { getProviderDefinition } from '../services/providerRegistry.js';
 import { selectBestAccount } from '../services/spaceAllocator.js';
 import { syncAccount } from '../services/syncService.js';
 import { requireAppUser } from '../middleware/authMiddleware.js';
@@ -25,7 +26,7 @@ function mapSharedItem(userId, account, item, localFile = getFileByRemoteId(user
 		createdTime: item.createdTime,
 		modifiedTime: item.modifiedTime,
 		capabilities: {
-			starred: Boolean(item.capabilities?.starred ?? localFile?.capabilities?.starred ?? account.provider === 'google_drive'),
+			starred: Boolean(item.capabilities?.starred ?? localFile?.capabilities?.starred ?? getProviderDefinition(account.provider)?.supports?.starring),
 			rename: Boolean(item.capabilities?.rename ?? localFile?.capabilities?.rename ?? false),
 			delete: Boolean(item.capabilities?.delete ?? localFile?.capabilities?.delete ?? false),
 		},
@@ -91,7 +92,7 @@ async function getSharedFileContext(userId, fileId) {
 			provider: account.provider,
 			email: file.owner_email || account.email,
 			capabilities: {
-				starred: Boolean(file.capabilities?.starred ?? account.provider === 'google_drive'),
+				starred: Boolean(file.capabilities?.starred ?? getProviderDefinition(account.provider)?.supports?.starring),
 				rename: Boolean(file.capabilities?.rename ?? false),
 				delete: Boolean(file.capabilities?.delete ?? false),
 			},
