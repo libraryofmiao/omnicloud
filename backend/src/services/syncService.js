@@ -4,7 +4,7 @@ import { LOCAL_USER_ID } from '../config/database.js';
 import { listUserIds } from './userService.js';
 import { getActiveAccounts, markAccountStatus, updateAccountStorage } from './accountService.js';
 import { createAdapter } from './adapterRegistry.js';
-import { clearFilesForAccount, replaceFilesForAccount } from './fileService.js';
+import { clearFilesForAccount, replaceFilesForAccount, listAllFiles, normalizeVirtualPath } from './fileService.js';
 import { isAuthError, withRetry } from '../utils/providerErrors.js';
 
 async function fetchAccountSnapshot(account) {
@@ -25,6 +25,35 @@ async function fetchAccountSnapshot(account) {
 			},
 		},
 	);
+}
+
+function countSnapshotChanges(previousRows, remoteRows) {
+	const previous = new Map(previousRows.map((row) => [String(row.remote_file_id), row]));
+	const current = new Map(remoteRows.map((row) => [String(row.remote_file_id), row]));
+	let added = 0;
+	let updated = 0;
+	let deleted = 0;
+
+	for (const [remoteId, row] of current) {
+		const before = previous.get(remoteId);
+		if (!before) {
+			added += 1;
+			continue;
+		}
+		const changed = normalizeVirtualPath(row.virtual_path) !== normalizeVirtualPath(before.virtual_path)
+			|| String(row.file_name || '') !== String(before.file_name || '')
+			|| Boolean(row.is_folder) !== Boolean(before.is_folder)
+			|| Number(row.size || 0) !== Number(before.size || 0)
+			|| String(row.mime_type || '') !== String(before.mime_type || '')
+			|| String(row.remote_parent_id || '') !== String(before.remote_parent_id || '')
+			|| String(row.remote_created_time || '') !== String(before.remote_created_time || '')
+			|| String(row.remote_modified_time || '') !== String(before.remote_modified_time || '');
+		if (changed) updated += 1;
+	}
+	for (const remoteId of previous.keys()) {
+		if (!current.has(remoteId)) deleted += 1;
+	}
+	return { added, updated, deleted, total: added + updated + deleted };
 }
 
 function handleSyncFailure(account, error) {
@@ -56,10 +85,12 @@ export async function runDeltaSync(userId) {
 		for (const account of accounts) {
 			try {
 				const { remoteFiles, storage } = await fetchAccountSnapshot(account);
+				const previousRows = listAllFiles(userId).filter((row) => row.cloud_account_id === account.id);
+				const delta = countSnapshotChanges(previousRows, remoteFiles);
 
 				replaceFilesForAccount(userId, account.id, remoteFiles);
 				updateAccountStorage(userId, account.id, storage.totalSpace, storage.usedSpace);
-				changesDetected += remoteFiles.length;
+				changesDetected += delta.total;
 			} catch (error) {
 				handleSyncFailure(account, error);
 			}
@@ -124,9 +155,18 @@ export async function syncAccount(userId, account) {
 		replaceFilesForAccount(userId, account.id, remoteFiles);
 		updateAccountStorage(userId, account.id, storage.totalSpace, storage.usedSpace);
 
+		const previousRows = listAllFiles(userId).filter((row) => row.cloud_account_id === account.id);
+		const delta = countSnapshotChanges(previousRows, remoteFiles);
+		replaceFilesForAccount(userId, account.id, remoteFiles);
+		updateAccountStorage(userId, account.id, storage.totalSpace, storage.usedSpace);
+
 		return {
 			accountId: account.id,
 			filesSynced: remoteFiles.length,
+			changesDetected: delta.total,
+			added: delta.added,
+			updated: delta.updated,
+			deleted: delta.deleted,
 			totalSpace: storage.totalSpace,
 			usedSpace: storage.usedSpace,
 		};
