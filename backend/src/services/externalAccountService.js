@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { env } from '../config/env.js';
 import { upsertCloudAccount, markAccountStatus } from './accountService.js';
 import { syncAccount } from './syncService.js';
@@ -65,6 +65,9 @@ export async function connectS3Account(userId, body = {}) {
 	}
 
 	const email = buildEmailLabel('s3', label || `${bucket}@s3`);
+	const accountKey = createHash('sha256')
+		.update(`s3|${endpoint}|${region}|${bucket}|${accessKeyId}`)
+		.digest('hex');
 	const resolvedTotal = Number(totalSpace) || DEFAULT_S3_TOTAL_SPACE;
 
 	const account = upsertCloudAccount({
@@ -72,6 +75,7 @@ export async function connectS3Account(userId, body = {}) {
 		id: randomUUID(),
 		email,
 		provider: 's3',
+		accountKey,
 		credentials: {
 			provider: 's3',
 			accessKeyId,
