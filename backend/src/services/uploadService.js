@@ -34,7 +34,11 @@ async function pipeUpload({ req, session }) {
 				tempPath = path.join(tempDir, 'payload');
 				const tempWriteStream = createWriteStream(tempPath, { flags: 'wx' });
 				file.pipe(tempWriteStream);
-				await once(tempWriteStream, 'finish');
+				await Promise.race([
+					once(tempWriteStream, 'finish'),
+					once(tempWriteStream, 'error').then(([error]) => Promise.reject(error)),
+					once(file, 'error').then(([error]) => Promise.reject(error)),
+				]);
 			} catch (error) {
 				try { file.destroy(); } catch {}
 				complete(reject, error);
@@ -79,19 +83,27 @@ async function pipeUpload({ req, session }) {
 			try {
 				let uploadResponse;
 				let account;
+				let lastError = null;
+				const candidates = [session.cloud_account_id, ...(session.fallback_chain || [])]
+					.filter((id, index, ids) => id && ids.indexOf(id) === index);
 
-				try {
-					({ result: uploadResponse, account } = await attemptUpload(activeAccountId));
-				} catch (error) {
-					if (isAuthError(error)) {
-						markAccountStatus(session.user_id, activeAccountId, 'invalid_token');
+				for (const accountId of candidates) {
+					if (tried.has(accountId)) continue;
+					activeAccountId = accountId;
+					try {
+						({ result: uploadResponse, account } = await attemptUpload(accountId));
+						lastError = null;
+						break;
+					} catch (error) {
+						lastError = error;
+						if (isAuthError(error)) {
+							markAccountStatus(session.user_id, accountId, 'invalid_token');
+						}
 					}
-					const fallbackId = session.fallback_chain.find((id) => !tried.has(id));
-					if (!fallbackId) {
-						throw error;
-					}
-					activeAccountId = fallbackId;
-					({ result: uploadResponse, account } = await attemptUpload(activeAccountId));
+				}
+
+				if (lastError || !uploadResponse || !account) {
+					throw lastError || new Error('No upload account succeeded');
 				}
 
 				const usedSpace = Number(account.used_space) + Number(session.size);
