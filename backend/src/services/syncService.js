@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { env } from '../config/env.js';
 import { LOCAL_USER_ID } from '../config/database.js';
+import { listUserIds } from './userService.js';
 import { getActiveAccounts, markAccountStatus, updateAccountStorage } from './accountService.js';
 import { createAdapter } from './adapterRegistry.js';
 import { clearFilesForAccount, replaceFilesForAccount } from './fileService.js';
@@ -47,14 +48,14 @@ let lastSyncReport = {
 	changesDetected: 0,
 };
 
-let activeSyncPromise = null;
+const activeSyncPromises = new Map();
 
 export async function runDeltaSync(userId) {
-	if (activeSyncPromise) {
-		return activeSyncPromise;
+	if (activeSyncPromises.has(userId)) {
+		return activeSyncPromises.get(userId);
 	}
 
-	activeSyncPromise = (async () => {
+	const syncPromise = (async () => {
 		const accounts = getActiveAccounts(userId);
 		let changesDetected = 0;
 
@@ -81,28 +82,28 @@ export async function runDeltaSync(userId) {
 	})();
 
 	try {
-		return await activeSyncPromise;
+		return await syncPromise;
 	} finally {
-		activeSyncPromise = null;
+		activeSyncPromises.delete(userId);
 	}
 }
 
 export function scheduleSync() {
 	const interval = Math.max(1, env.syncIntervalMinutes);
 	cron.schedule(`*/${interval} * * * *`, () => {
-		if (env.appMode !== 'local') {
-			return;
-		}
-		runDeltaSync(LOCAL_USER_ID).catch((error) => {
-			console.error('Delta sync failed:', error);
+		const userIds = env.appMode === 'local' ? [LOCAL_USER_ID] : listUserIds();
+		for (const userId of userIds) {
+			runDeltaSync(userId).catch((error) => {
+			console.error(`Delta sync failed for user ${userId}:`, error);
 		});
+		}
 	});
 }
 
 export function getLastSyncReport() {
 	return {
 		...lastSyncReport,
-		isRunning: Boolean(activeSyncPromise),
+		isRunning: activeSyncPromises.size > 0,
 	};
 }
 
