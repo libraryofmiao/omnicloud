@@ -15,25 +15,23 @@ export const env = {
 	authCookieName: process.env.AUTH_COOKIE_NAME || 'omnicloud_session',
 	authSessionTtlHours: Number(process.env.AUTH_SESSION_TTL_HOURS || 24 * 14),
 	authSecret: process.env.AUTH_SECRET || process.env.OMNICLOUD_SECRET_HALF || 'omnicloud-dev-auth-secret',
+	adminEmail: (process.env.OMNICLOUD_ADMIN_EMAIL || '').trim().toLowerCase(),
+	adminPasswordHash: process.env.OMNICLOUD_ADMIN_PASSWORD_HASH || '',
 	encryptionKey,
 	frontendUrl: process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:5173',
 	googleClientId: process.env.GOOGLE_CLIENT_ID || '',
 	googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-	googleRedirectUri:
-		process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8787/api/accounts/google/callback',
+	googleRedirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8787/api/accounts/google/callback',
 	onedriveClientId: process.env.ONEDRIVE_CLIENT_ID || '',
 	onedriveClientSecret: process.env.ONEDRIVE_CLIENT_SECRET || '',
 	onedriveTenantId: process.env.ONEDRIVE_TENANT_ID || 'common',
-	onedriveRedirectUri:
-		process.env.ONEDRIVE_REDIRECT_URI || 'http://localhost:8787/api/accounts/onedrive/callback',
+	onedriveRedirectUri: process.env.ONEDRIVE_REDIRECT_URI || 'http://localhost:8787/api/accounts/onedrive/callback',
 	dropboxClientId: process.env.DROPBOX_CLIENT_ID || '',
 	dropboxClientSecret: process.env.DROPBOX_CLIENT_SECRET || '',
-	dropboxRedirectUri:
-		process.env.DROPBOX_REDIRECT_URI || 'http://localhost:8787/api/accounts/dropbox/callback',
+	dropboxRedirectUri: process.env.DROPBOX_REDIRECT_URI || 'http://localhost:8787/api/accounts/dropbox/callback',
 	yandexClientId: process.env.YANDEX_CLIENT_ID || '',
 	yandexClientSecret: process.env.YANDEX_CLIENT_SECRET || '',
-	yandexRedirectUri:
-		process.env.YANDEX_REDIRECT_URI || 'http://localhost:8787/api/accounts/yandex/callback',
+	yandexRedirectUri: process.env.YANDEX_REDIRECT_URI || 'http://localhost:8787/api/accounts/yandex/callback',
 };
 
 export function redactEnv() {
@@ -45,6 +43,8 @@ export function redactEnv() {
 		authCookieName: env.authCookieName,
 		authSessionTtlHours: env.authSessionTtlHours,
 		frontendUrl: env.frontendUrl,
+		adminEmail: env.adminEmail ? '[configured]' : '[missing]',
+		adminPasswordHash: env.adminPasswordHash ? '[configured]' : '[missing]',
 		googleClientId: env.googleClientId ? '[configured]' : '[missing]',
 		googleRedirectUri: env.googleRedirectUri,
 		onedriveClientId: env.onedriveClientId ? '[configured]' : '[missing]',
