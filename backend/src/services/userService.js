@@ -26,6 +26,10 @@ export function createUser({ email, passwordHash, isLocal = false, id = randomUU
 	return getUserById(id);
 }
 
+export function listUserIds() {
+	return db.prepare('SELECT id FROM users ORDER BY id').all().map((row) => row.id);
+}
+
 export function getOrCreateLocalUser() {
 	const existing = getUserById(LOCAL_USER_ID);
 	if (existing) return existing;
