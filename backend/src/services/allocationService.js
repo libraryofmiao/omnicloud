@@ -89,8 +89,16 @@ export function setAllocationConfig(userId, { strategy, order } = {}) {
 	}
 
 	if (order !== undefined) {
-		if (!Array.isArray(order) || order.some((id) => typeof id !== 'string')) {
-			throw new Error('Allocation order must be an array of account ids');
+		if (!Array.isArray(order) || order.some((id) => typeof id !== 'string' || !id.trim())) {
+			throw new Error('Allocation order must be an array of non-empty account ids');
+		}
+		const uniqueIds = new Set(order);
+		if (uniqueIds.size !== order.length) {
+			throw new Error('Allocation order cannot contain duplicate account ids');
+		}
+		const activeIds = new Set(getActiveAccounts(userId).map((account) => account.id));
+		if (order.some((id) => !activeIds.has(id))) {
+			throw new Error('Allocation order can reference only active connected accounts');
 		}
 		shouldReset = true;
 		nextOrder = order;
