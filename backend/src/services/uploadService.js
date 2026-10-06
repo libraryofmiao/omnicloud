@@ -32,7 +32,6 @@ async function pipeUpload({ req, session }) {
 				tempDir = await mkdtemp(path.join(os.tmpdir(), 'omnicloud-upload-'));
 				tempPath = path.join(tempDir, 'payload');
 				const tempWriteStream = createWriteStream(tempPath, { flags: 'wx' });
-				file.pipe(tempWriteStream);
 				await new Promise((resolve, reject) => {
 					const cleanup = () => {
 						tempWriteStream.off('finish', onFinish);
