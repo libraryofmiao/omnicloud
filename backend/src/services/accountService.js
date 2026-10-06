@@ -4,7 +4,7 @@ import { encryptJson } from '../utils/crypto.js';
 export function listAccounts(userId) {
 	return db
 		.prepare(`
-      SELECT id, user_id, email, provider, total_space, used_space, status, created_at, updated_at
+      SELECT id, user_id, email, provider, account_key, total_space, used_space, status, created_at, updated_at
       FROM cloud_accounts
       WHERE user_id = ?
       ORDER BY provider, email
