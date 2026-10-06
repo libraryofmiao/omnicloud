@@ -1,6 +1,7 @@
 import { db } from '../config/database.js';
 
 const VALID_KEYS = ['language', 'theme'];
+const VALID_THEMES = ['light', 'dark', 'system'];
 
 export function getSetting(userId, key) {
 	if (!VALID_KEYS.includes(key)) {
@@ -26,6 +27,12 @@ export function setSetting(userId, key, value) {
 	if (!VALID_KEYS.includes(key)) {
 		throw new Error(`Invalid setting key: ${key}`);
 	}
+	if (typeof value !== 'string' || !value.trim()) {
+		throw new Error(`Setting ${key} must be a non-empty string`);
+	}
+	if (key === 'theme' && !VALID_THEMES.includes(value)) {
+		throw new Error(`Invalid theme: ${value}`);
+	}
 
 	const stmt = db.prepare(`
 		INSERT INTO user_settings (id, user_id, key, value, updated_at)
@@ -42,11 +49,12 @@ export function setSetting(userId, key, value) {
 export function updateSettings(userId, settings) {
 	const results = {};
 
-	for (const [key, value] of Object.entries(settings)) {
-		if (VALID_KEYS.includes(key)) {
-			setSetting(userId, key, value);
-			results[key] = value;
+	for (const [key, value] of Object.entries(settings || {})) {
+		if (!VALID_KEYS.includes(key)) {
+			throw new Error(`Invalid setting key: ${key}`);
 		}
+		setSetting(userId, key, value);
+		results[key] = value;
 	}
 
 	return results;
