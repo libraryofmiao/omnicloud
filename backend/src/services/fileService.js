@@ -48,7 +48,8 @@ export function searchFiles(userId, term = '', limit = 50) {
 	const normalizedTerm = String(term || '').trim();
 	if (!normalizedTerm) return [];
 
-	const safeLimit = Math.max(1, Math.min(Number(limit) || 50, 100));
+	const parsedLimit = Number(limit);
+	const safeLimit = Number.isSafeInteger(parsedLimit) ? Math.max(1, Math.min(parsedLimit, 100)) : 50;
 	const rows = db
 		.prepare(`
       SELECT
