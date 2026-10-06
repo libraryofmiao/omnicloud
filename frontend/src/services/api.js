@@ -36,8 +36,8 @@ export const authApi = {
 			body: JSON.stringify(payload),
 		});
 	},
-	register(payload) {
-		return request('/auth/register', {
+	changePassword(payload) {
+		return request('/auth/change-password', {
 			method: 'POST',
 			body: JSON.stringify(payload),
 		});
