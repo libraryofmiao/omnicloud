@@ -12,7 +12,7 @@ router.get('/health', (req, res) => {
 		service: 'omnicloud-api',
 		config: redactEnv(),
 		auth: getAuthSummary(req.user),
-		sync: getLastSyncReport(),
+		sync: getLastSyncReport(req.user?.id || null),
 		timestamp: new Date().toISOString(),
 	});
 });
