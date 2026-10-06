@@ -26,6 +26,12 @@ export function getUploadSessionForUser(userId, id) {
 	return session;
 }
 
+export function getUploadSessionForUserWithToken(userId, id, token) {
+	const session = getUploadSessionForUser(userId, id);
+	if (!session || !token || session.token !== token) return null;
+	return session;
+}
+
 export function updateUploadSession(id, patch) {
 	const session = sessions.get(id);
 	if (!session) return null;
