@@ -5,9 +5,9 @@ import {
 	clearUserSessions,
 	createSession,
 	destroySession,
+	ensureSingleHostedUser,
 	getAuthSummary,
 	loginHostedUser,
-	registerHostedUser,
 } from '../services/authService.js';
 import { parseCookies, requireAppUser } from '../middleware/authMiddleware.js';
 
@@ -23,20 +23,10 @@ function clearAuthCookie(res) {
 	res.clearCookie(env.authCookieName, { ...options, maxAge: 0 });
 }
 
+ensureSingleHostedUser();
+
 router.get('/auth/me', (req, res) => {
 	res.json({ data: getAuthSummary(req.user) });
-});
-
-router.post('/auth/register', (req, res, next) => {
-	try {
-		const user = registerHostedUser(req.body || {});
-		clearUserSessions(user.id);
-		const session = createSession(user.id);
-		setAuthCookie(res, session.token);
-		res.status(201).json({ data: getAuthSummary(user) });
-	} catch (error) {
-		next(error);
-	}
 });
 
 router.post('/auth/login', (req, res, next) => {
@@ -64,11 +54,7 @@ router.post('/auth/change-password', requireAppUser, (req, res, next) => {
 router.post('/auth/logout', (req, res) => {
 	const cookies = parseCookies(req.headers.cookie || '');
 	const token = cookies[env.authCookieName] || '';
-
-	if (token) {
-		destroySession(token);
-	}
-
+	if (token) destroySession(token);
 	clearAuthCookie(res);
 	res.json({ data: getAuthSummary(env.appMode === 'local' ? req.user : null) });
 });
