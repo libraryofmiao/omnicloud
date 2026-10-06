@@ -70,3 +70,13 @@ The project is being started from the architecture and implementation of the pub
 - Corrected remaining internal references to the exported `normalizeVirtualPath` helper in `fileService.js`.
 - This restores path normalization for account sync/upsert flows without changing the README-defined workspace behavior.
 - Recovery point: `recovery/readme-next-workspace`.
+
+
+## README-aligned upload session security audit
+
+- Audited the documented upload-session and real-time progress workflow.
+- Found that the issued upload session token was not actually enforced by the upload stream or progress WebSocket endpoints.
+- Added user-scoped upload-session token validation for the payload stream and WebSocket progress channel.
+- Updated the frontend to pass the issued token to both channels.
+- Added a focused upload-session isolation test.
+- Recovery point: `recovery/readme-next-upload-session`.
