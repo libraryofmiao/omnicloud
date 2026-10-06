@@ -190,7 +190,7 @@ export const useUploadQueueStore = defineStore('uploadQueue', {
 			});
 
 			try {
-				const response = await fetch(api.downloadUrl(file.id), { signal: abortController.signal });
+				const response = await fetch(api.downloadUrl(file.id), { credentials: 'include', signal: abortController.signal });
 				if (!response.ok) {
 					const payload = await response.json().catch(() => ({ error: 'Download failed' }));
 					throw new Error(payload.error || 'Download failed');
