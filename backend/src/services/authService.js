@@ -1,10 +1,11 @@
 import crypto from 'crypto';
 import { db } from '../config/database.js';
 import { env } from '../config/env.js';
-import { createUser, getUserByEmail, getUserById, getOrCreateLocalUser, serializeUser } from './userService.js';
+import { getUserByEmail, getUserById, getOrCreateLocalUser, serializeUser } from './userService.js';
 
 const SESSION_BYTES = 32;
 const PASSWORD_MIN_LENGTH = 8;
+const SINGLE_USER_ID = 'local-default-user';
 
 function sha256(value) {
 	return crypto.createHash('sha256').update(value).digest('hex');
@@ -24,7 +25,9 @@ export function verifyPassword(password, storedHash) {
 	if (!storedHash || !storedHash.includes(':')) return false;
 	const [salt, expectedHash] = storedHash.split(':');
 	const actualHash = crypto.scryptSync(password, salt, 64).toString('hex');
-	return crypto.timingSafeEqual(Buffer.from(actualHash, 'hex'), Buffer.from(expectedHash, 'hex'));
+	const expected = Buffer.from(expectedHash, 'hex');
+	const actual = Buffer.from(actualHash, 'hex');
+	return expected.length === actual.length && crypto.timingSafeEqual(actual, expected);
 }
 
 function sessionExpiryDate() {
@@ -44,11 +47,7 @@ export function createSession(userId) {
 		VALUES (?, ?, ?, ?)
 	`).run(sessionId, userId, tokenHash, expiresAt.toISOString());
 
-	return {
-		id: sessionId,
-		token,
-		expiresAt: expiresAt.toISOString(),
-	};
+	return { id: sessionId, token, expiresAt: expiresAt.toISOString() };
 }
 
 export function resolveSession(token) {
@@ -66,7 +65,6 @@ export function resolveSession(token) {
 		db.prepare('DELETE FROM auth_sessions WHERE token_hash = ?').run(tokenHash);
 		return null;
 	}
-
 	db.prepare('UPDATE auth_sessions SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?').run(row.session_id);
 	return getUserById(row.user_id);
 }
@@ -81,71 +79,42 @@ export function clearUserSessions(userId) {
 	db.prepare('DELETE FROM auth_sessions WHERE user_id = ?').run(userId);
 }
 
-export function registerHostedUser({ email, password }) {
-	if (env.appMode !== 'hosted') {
-		throw new Error('Registration is only available in hosted mode');
+export function ensureSingleHostedUser() {
+	if (env.appMode !== 'hosted') return;
+	if (!env.adminEmail || !env.adminPasswordHash) {
+		throw new Error('Hosted authentication is not configured');
 	}
-
-	const normalizedEmail = normalizeEmail(email);
-	if (!normalizedEmail || !normalizedEmail.includes('@')) {
-		throw new Error('Valid email is required');
-	}
-
-	if (String(password || '').length < PASSWORD_MIN_LENGTH) {
-		throw new Error(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
-	}
-
-	if (getUserByEmail(normalizedEmail)) {
-		throw new Error('Email is already registered');
-	}
-
-	// On the first hosted registration, adopt the existing local account so
-	// existing OmniCloud cloud accounts and file metadata remain intact.
-	const localUser = getUserById('local-default-user');
-	if (localUser?.is_local) {
+	const localUser = getOrCreateLocalUser();
+	if (localUser.email !== env.adminEmail || localUser.password_hash !== env.adminPasswordHash || !localUser.is_local) {
 		db.prepare(`
 			UPDATE users
 			SET email = ?, password_hash = ?, is_local = 0, updated_at = CURRENT_TIMESTAMP
 			WHERE id = ?
-		`).run(normalizedEmail, hashPassword(password), localUser.id);
-		return getUserById(localUser.id);
+		`).run(env.adminEmail, env.adminPasswordHash, SINGLE_USER_ID);
+		clearUserSessions(SINGLE_USER_ID);
 	}
-
-	return createUser({
-		email: normalizedEmail,
-		passwordHash: hashPassword(password),
-	});
 }
 
 export function loginHostedUser({ email, password }) {
-	if (env.appMode !== 'hosted') {
-		throw new Error('Login is only available in hosted mode');
-	}
+	if (env.appMode !== 'hosted') throw new Error('Login is only available in hosted mode');
+	if (!env.adminEmail || !env.adminPasswordHash) throw new Error('Hosted authentication is not configured');
 
-	const user = getUserByEmail(normalizeEmail(email));
-	if (!user || !verifyPassword(password, user.password_hash)) {
+	const normalizedEmail = normalizeEmail(email);
+	if (normalizedEmail !== env.adminEmail) throw new Error('Invalid email or password');
+
+	const user = getUserById(SINGLE_USER_ID);
+	if (!user || user.email !== env.adminEmail || !verifyPassword(password, user.password_hash)) {
 		throw new Error('Invalid email or password');
 	}
-
 	return user;
 }
 
 export function changeHostedPassword(user, { currentPassword, newPassword }) {
-	if (env.appMode !== 'hosted') {
-		throw new Error('Password changes are only available in hosted mode');
-	}
-	if (!user) {
-		throw new Error('Authentication required');
-	}
-	if (String(newPassword || '').length < PASSWORD_MIN_LENGTH) {
-		throw new Error(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
-	}
-	if (!verifyPassword(currentPassword, user.password_hash)) {
-		throw new Error('Current password is incorrect');
-	}
-	if (currentPassword === newPassword) {
-		throw new Error('New password must be different from the current password');
-	}
+	if (env.appMode !== 'hosted') throw new Error('Password changes are only available in hosted mode');
+	if (!user || user.id !== SINGLE_USER_ID || user.email !== env.adminEmail) throw new Error('Authentication required');
+	if (String(newPassword || '').length < PASSWORD_MIN_LENGTH) throw new Error(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
+	if (!verifyPassword(currentPassword, user.password_hash)) throw new Error('Current password is incorrect');
+	if (currentPassword === newPassword) throw new Error('New password must be different from the current password');
 
 	db.prepare(`
 		UPDATE users
@@ -174,7 +143,7 @@ export function getAuthSummary(user) {
 	return {
 		mode: env.appMode,
 		requiresAuth: env.appMode === 'hosted',
-		authenticated: Boolean(user),
-		user: serializeUser(user),
+		authenticated: Boolean(user && user.id === SINGLE_USER_ID && user.email === env.adminEmail),
+		user: user && user.id === SINGLE_USER_ID && user.email === env.adminEmail ? serializeUser(user) : null,
 	};
 }
