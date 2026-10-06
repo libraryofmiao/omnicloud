@@ -80,3 +80,12 @@ The project is being started from the architecture and implementation of the pub
 - Updated the frontend to pass the issued token to both channels.
 - Added a focused upload-session isolation test.
 - Recovery point: `recovery/readme-next-upload-session`.
+
+
+## README-aligned sync/metadata mirror audit
+
+- Audited scheduled/manual sync reporting after the upload-session work.
+- Fixed sync status reporting so hosted users no longer observe another user's last-sync report.
+- Health now returns the authenticated user's sync report while retaining aggregate running state for unauthenticated health checks.
+- Added a sync-service module smoke test.
+- Recovery point: `recovery/readme-next-sync-audit`.
