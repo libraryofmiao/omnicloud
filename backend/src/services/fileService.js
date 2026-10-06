@@ -306,5 +306,5 @@ export function buildVirtualFileKey({ cloudAccountId, remoteFileId }) {
 
 export function buildWorkspacePath({ virtualPath = '/', fileName }) {
 	const base = normalizeVirtualPath(virtualPath);
-	return `${base}${String(fileName || '').replace(/^\\/+/, '')}`;
+	return `${base}${String(fileName || '').replace(/^\/+/, '')}`;
 }
