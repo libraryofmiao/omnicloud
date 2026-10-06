@@ -2,8 +2,7 @@ import { randomUUID } from 'crypto';
 import { env } from '../config/env.js';
 import { upsertCloudAccount } from './accountService.js';
 import { syncAccount } from './syncService.js';
-
-const oauthStates = new Map();
+import { createOAuthState, consumeOAuthState } from './oauthStateService.js';
 
 function assertYandexConfigured() {
 	if (!env.yandexClientId || !env.yandexClientSecret) {
@@ -60,8 +59,7 @@ export function getYandexIntegrationStatus() {
 export function createYandexAuthorizationRequest(userId) {
 	assertYandexConfigured();
 
-	const state = randomUUID();
-	oauthStates.set(state, { userId, createdAt: Date.now() });
+	const state = createOAuthState({ provider: 'yandex', userId });
 
 	const authorizationUrl = new URL('https://oauth.yandex.com/authorize');
 	authorizationUrl.searchParams.set('response_type', 'code');
@@ -84,12 +82,10 @@ export async function completeYandexAccountLink({ code, state }) {
 		throw new Error('Missing Yandex OAuth code or state');
 	}
 
-	const authState = oauthStates.get(state);
+	const authState = consumeOAuthState({ provider: 'yandex', state });
 	if (!authState) {
 		throw new Error('Invalid or expired Yandex OAuth state');
 	}
-
-	oauthStates.delete(state);
 
 	const tokens = await exchangeCodeForTokens(code);
 	const profile = await fetchYandexProfile(tokens.access_token);
@@ -98,6 +94,7 @@ export async function completeYandexAccountLink({ code, state }) {
 		userId: authState.userId,
 		id: randomUUID(),
 		email: profile.email,
+		accountKey: profile.accountId || profile.email,
 		provider: 'yandex',
 		credentials: {
 			provider: 'yandex',
