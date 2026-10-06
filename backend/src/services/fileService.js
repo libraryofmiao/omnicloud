@@ -3,7 +3,7 @@ import { db } from '../config/database.js';
 import { resolveMimeType } from '../utils/mime.js';
 import { getProviderDefinition } from './providerRegistry.js';
 
-function normalizePath(input = '/') {
+export function normalizeVirtualPath(input = '/') {
 	if (!input || input === '/') return '/';
 	const cleaned = input.startsWith('/') ? input : `/${input}`;
 	return cleaned.endsWith('/') ? cleaned : `${cleaned}/`;
@@ -27,7 +27,7 @@ function buildDisplayNames(rows) {
 }
 
 export function listFilesByPath(userId, virtualPath = '/') {
-	const normalized = normalizePath(virtualPath);
+	const normalized = normalizeVirtualPath(virtualPath);
 	const rows = db
 		.prepare(`
       SELECT
@@ -74,7 +74,7 @@ export function createFileMetadata(record) {
 	const payload = {
 		id: randomUUID(),
 		user_id: record.user_id,
-		virtual_path: normalizePath(record.virtual_path),
+		virtual_path: normalizeVirtualPath(record.virtual_path),
 		file_name: record.file_name,
 		is_folder: record.is_folder ? 1 : 0,
 		size: record.size,
@@ -273,4 +273,13 @@ export function listDirectoryTree(userId) {
       ORDER BY virtual_path, is_folder DESC, file_name
     `)
 		.all(userId);
+}
+
+export function buildVirtualFileKey({ cloudAccountId, remoteFileId }) {
+	return `${cloudAccountId}:${String(remoteFileId)}`;
+}
+
+export function buildWorkspacePath({ virtualPath = '/', fileName }) {
+	const base = normalizeVirtualPath(virtualPath);
+	return `${base}${String(fileName || '').replace(/^\\/+/, '')}`;
 }
