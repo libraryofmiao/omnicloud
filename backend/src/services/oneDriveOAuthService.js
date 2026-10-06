@@ -2,8 +2,7 @@ import { randomUUID } from 'crypto';
 import { env } from '../config/env.js';
 import { upsertCloudAccount } from './accountService.js';
 import { syncAccount } from './syncService.js';
-
-const oauthStates = new Map();
+import { createOAuthState, consumeOAuthState } from './oauthStateService.js';
 
 function getAuthorityBase() {
 	return `https://login.microsoftonline.com/${encodeURIComponent(env.onedriveTenantId)}/oauth2/v2.0`;
@@ -67,6 +66,7 @@ async function fetchGraphProfile(accessToken) {
 	return {
 		email: me.mail || me.userPrincipalName || null,
 		displayName: me.displayName || null,
+		accountId: me.id || null,
 		driveId: drive.id || null,
 		driveType: drive.driveType || 'personal',
 		totalSpace: Number(drive.quota?.total || 0),
@@ -86,8 +86,7 @@ export function getOneDriveIntegrationStatus() {
 export function createOneDriveAuthorizationRequest(userId) {
 	assertOneDriveConfigured();
 
-	const state = randomUUID();
-	oauthStates.set(state, { userId, createdAt: Date.now() });
+	const state = createOAuthState({ provider: 'onedrive', userId });
 
 	const authorizationUrl = new URL(`${getAuthorityBase()}/authorize`);
 	authorizationUrl.searchParams.set('client_id', env.onedriveClientId);
@@ -111,12 +110,10 @@ export async function completeOneDriveAccountLink({ code, state }) {
 		throw new Error('Missing OneDrive OAuth code or state');
 	}
 
-	const authState = oauthStates.get(state);
+	const authState = consumeOAuthState({ provider: 'onedrive', state });
 	if (!authState) {
 		throw new Error('Invalid or expired OneDrive OAuth state');
 	}
-
-	oauthStates.delete(state);
 
 	const tokens = await exchangeCodeForTokens(code);
 	const profile = await fetchGraphProfile(tokens.access_token);
@@ -129,6 +126,7 @@ export async function completeOneDriveAccountLink({ code, state }) {
 		userId: authState.userId,
 		id: randomUUID(),
 		email: profile.email,
+		accountKey: profile.accountId || profile.email,
 		provider: 'onedrive',
 		credentials: {
 			provider: 'onedrive',
