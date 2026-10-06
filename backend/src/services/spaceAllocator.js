@@ -101,7 +101,10 @@ function selectManual(accounts, requiredBytes) {
 }
 
 export function selectBestAccount(userId, requiredBytes = 0) {
-	const required = Number(requiredBytes) || 0;
+	const required = Number(requiredBytes);
+	if (!Number.isSafeInteger(required) || required < 0) {
+		throw new Error('Upload size must be a non-negative safe integer');
+	}
 	const { strategy } = getAllocationConfig(userId);
 	const accounts = getOrderedActiveAccounts(userId).map(withFreeSpace);
 
