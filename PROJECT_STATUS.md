@@ -114,4 +114,5 @@ The project is being started from the architecture and implementation of the pub
 - My Drive search now uses the backend cross-provider search API, with stale search responses ignored.
 - Added sync delta coverage and a common provider-adapter contract test covering all seven supported adapters.
 - Final implementation remains confined to `libraryofmiao/omnicloud`.
+- Allocation tests now exercise every documented strategy when no account can fit the upload.
 - GitHub currently reports no commit status/workflow result for the latest commits, so CI has not been represented as passing without evidence.
