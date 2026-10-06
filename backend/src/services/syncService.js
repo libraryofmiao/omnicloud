@@ -41,13 +41,7 @@ function handleSyncFailure(account, error) {
 	);
 }
 
-let lastSyncReport = {
-	lastRunAt: null,
-	userId: null,
-	scannedAccounts: 0,
-	changesDetected: 0,
-};
-
+const syncReports = new Map();
 const activeSyncPromises = new Map();
 
 export async function runDeltaSync(userId) {
@@ -71,14 +65,15 @@ export async function runDeltaSync(userId) {
 			}
 		}
 
-		lastSyncReport = {
+		const report = {
 			lastRunAt: new Date().toISOString(),
 			userId,
 			scannedAccounts: accounts.length,
 			changesDetected,
 		};
+		syncReports.set(userId, report);
 
-		return lastSyncReport;
+		return report;
 	})();
 
 	try {
@@ -100,9 +95,24 @@ export function scheduleSync() {
 	});
 }
 
-export function getLastSyncReport() {
+export function getLastSyncReport(userId = null) {
+	if (userId) {
+		return {
+			...(syncReports.get(userId) || {
+				lastRunAt: null,
+				userId,
+				scannedAccounts: 0,
+				changesDetected: 0,
+			}),
+			isRunning: activeSyncPromises.has(userId),
+		};
+	}
+
 	return {
-		...lastSyncReport,
+		lastRunAt: null,
+		userId: null,
+		scannedAccounts: 0,
+		changesDetected: 0,
 		isRunning: activeSyncPromises.size > 0,
 	};
 }
