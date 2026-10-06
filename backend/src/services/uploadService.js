@@ -1,5 +1,9 @@
 import Busboy from 'busboy';
-import { PassThrough } from 'stream';
+import { createReadStream, createWriteStream } from 'fs';
+import { mkdtemp, rm } from 'fs/promises';
+import os from 'os';
+import path from 'path';
+import { once } from 'events';
 import { createAdapter } from './adapterRegistry.js';
 import { getAccountById, markAccountStatus, updateAccountUsage } from './accountService.js';
 import { createFileMetadata, getFileByRemoteId } from './fileService.js';
@@ -23,8 +27,19 @@ async function pipeUpload({ req, session }) {
 
 		busboy.on('file', async (_field, file, info) => {
 			fileReceived = true;
-			const streamBuffer = new PassThrough();
-			file.pipe(streamBuffer);
+			let tempDir;
+			let tempPath;
+			try {
+				tempDir = await mkdtemp(path.join(os.tmpdir(), 'omnicloud-upload-'));
+				tempPath = path.join(tempDir, 'payload');
+				const tempWriteStream = createWriteStream(tempPath, { flags: 'wx' });
+				file.pipe(tempWriteStream);
+				await once(tempWriteStream, 'finish');
+			} catch (error) {
+				try { file.destroy(); } catch {}
+				complete(reject, error);
+				return;
+			}
 
 			let activeAccountId = session.cloud_account_id;
 			const tried = new Set();
@@ -38,7 +53,9 @@ async function pipeUpload({ req, session }) {
 				const adapter = createAdapter(account);
 
 				const result = await adapter.uploadStream({
-					stream: streamBuffer,
+					// A fresh read stream is used for every fallback attempt. This makes
+					// fallback reliable even when the previous provider consumed the input.
+					stream: createReadStream(tempPath),
 					size: session.size,
 					fileName: info.filename,
 					mimeType: info.mimeType,
@@ -113,6 +130,10 @@ async function pipeUpload({ req, session }) {
 					message: error.message,
 				});
 				complete(reject, error);
+			} finally {
+				if (tempDir) {
+					await rm(tempDir, { recursive: true, force: true }).catch(() => {});
+				}
 			}
 		});
 
