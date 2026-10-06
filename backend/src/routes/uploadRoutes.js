@@ -11,15 +11,16 @@ router.use(requireAppUser);
 router.post('/uploads/initiate', (req, res) => {
 	const { file_name, size, mime_type, virtual_path = '/', remote_parent_id = null } = req.body;
 
-	if (!file_name || size === undefined || size === null) {
-		return res.status(400).json({ error: 'file_name and size are required' });
+	const requestedSize = Number(size);
+	if (!String(file_name || '').trim() || !Number.isSafeInteger(requestedSize) || requestedSize < 0) {
+		return res.status(400).json({ error: 'A valid file_name and non-negative integer size are required' });
 	}
 
-	const allocation = selectBestAccount(req.user.id, Number(size));
+	const allocation = selectBestAccount(req.user.id, requestedSize);
 	const session = createUploadSession({
 		user_id: req.user.id,
 		file_name,
-		size: Number(size),
+		size: requestedSize,
 		mime_type,
 		virtual_path,
 		remote_parent_id,
