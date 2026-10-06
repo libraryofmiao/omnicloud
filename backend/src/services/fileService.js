@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { db } from '../config/database.js';
 import { resolveMimeType } from '../utils/mime.js';
+import { getProviderDefinition } from './providerRegistry.js';
 
 function normalizePath(input = '/') {
 	if (!input || input === '/') return '/';
@@ -9,17 +10,20 @@ function normalizePath(input = '/') {
 }
 
 function buildDisplayNames(rows) {
-	return rows.map((row) => ({
+	return rows.map((row) => {
+		const supports = getProviderDefinition(row.provider)?.supports || {};
+		return {
 		...row,
 		createdTime: row.remote_created_time || null,
 		modifiedTime: row.remote_modified_time || null,
 		starred: Boolean(row.is_starred),
 		capabilities: {
-			starred: true,
+			starred: Boolean(supports.starring),
 			rename: true,
 			delete: true,
 		},
-	}));
+	};
+	});
 }
 
 export function listFilesByPath(userId, virtualPath = '/') {
