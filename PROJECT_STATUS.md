@@ -30,3 +30,17 @@ The project is being started from the architecture and implementation of the pub
 - Verify credential encryption and portability.
 - Verify sync and metadata behavior.
 - Establish a reliable development/build workflow.
+
+
+## README-aligned development completed
+
+- Durable OAuth state persisted in SQLite for Google Drive, OneDrive, Dropbox, and Yandex.
+- Stable provider account identifiers are used when the provider exposes them.
+- Provider capability metadata now drives unified file presentation instead of provider-name assumptions.
+- Durable OAuth state tests added.
+- README now documents the backend test command.
+
+## Recovery point
+
+- recovery/pre-readme-phase-development
+- Created before this development phase.
