@@ -10,7 +10,12 @@ function parseCookies(cookieHeader = '') {
 			.map((item) => {
 				const separator = item.indexOf('=');
 				if (separator === -1) return [item, ''];
-				return [item.slice(0, separator), decodeURIComponent(item.slice(separator + 1))];
+				const rawValue = item.slice(separator + 1);
+				try {
+					return [item.slice(0, separator), decodeURIComponent(rawValue)];
+				} catch {
+					return [item.slice(0, separator), ''];
+				}
 			}),
 	);
 }
