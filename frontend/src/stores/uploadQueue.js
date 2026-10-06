@@ -264,7 +264,7 @@ export const useUploadQueueStore = defineStore('uploadQueue', {
 						virtual_path: targetPath,
 					}, { signal: queueItem.abortController.signal });
 
-					const socket = api.createUploadSocket(data.upload_id);
+					const socket = api.createUploadSocket(data.upload_id, data.session_token);
 					this.updateUpload(queueItem.id, {
 						status: 'uploading',
 						socket,
@@ -307,7 +307,10 @@ export const useUploadQueueStore = defineStore('uploadQueue', {
 						});
 					};
 
-					await api.uploadFile(data.upload_id, file, { signal: queueItem.abortController.signal });
+					await api.uploadFile(data.upload_id, file, {
+						signal: queueItem.abortController.signal,
+						token: data.session_token,
+					});
 				} catch (error) {
 					if (isAbortError(error) || queueItem.abortController.signal.aborted) {
 						this.updateUpload(queueItem.id, {
